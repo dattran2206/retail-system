@@ -1,12 +1,4 @@
-import { IsEmail, IsString, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
+import { PickType } from '@nestjs/swagger';
+import { UserDto } from '../../user/dto/user.dto';
 
-export class LoginDto {
-  @IsEmail({}, { message: 'Invalid email format' })
-  @IsNotEmpty()
-  email!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6, { message: 'Password must be at least 6 characters' })
-  password!: string;
-}
+export class LoginDto extends PickType(UserDto, ['email', 'password'] as const) {}

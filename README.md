@@ -25,45 +25,54 @@ Hệ thống SaaS quản lý bán lẻ cho phép nhiều tenant (doanh nghiệp)
 ```
 retail-system/
 ├── apps/
-│   ├── api/                    # NestJS Backend
+│   ├── api/                    # NestJS Backend API
+│   │   ├── prisma/             
+│   │   │   ├── schema.prisma   # Database schema
+│   │   │   └── seeds/          # Default admin & tenant seed data
 │   │   ├── src/
-│   │   │   ├── main.ts         # Entry point
-│   │   │   ├── app.module.ts   # Root module
-│   │   │   ├── common/         # Middleware, filters, guards, decorators
-│   │   │   ├── config/         # App, DB, JWT, Redis configs
-│   │   │   ├── database/       # PrismaService, PrismaModule
-│   │   │   ├── infrastructure/ # Redis module & service
-│   │   │   ├── modules/        # Feature modules (auth, tenant, user)
-│   │   │   └── shared/         # Logger module
-│   │   └── prisma/
-│   │       ├── schema.prisma   # Database schema
-│   │       └── seeds/          # Seed data
+│   │   │   ├── common/         # Middlewares, guards, filters, decorators
+│   │   │   ├── config/         # System configurations
+│   │   │   ├── database/       # Prisma initialization
+│   │   │   ├── infrastructure/ # Redis & external services
+│   │   │   ├── modules/        # Feature Modules
+│   │   │   │   ├── auth/       # Authentication (JWT)
+│   │   │   │   ├── tenant/     # Tenant management & schema prov.
+│   │   │   │   ├── user/       # User management & Roles
+│   │   │   │   ├── catalog/    # Product & Categories
+│   │   │   │   ├── inventory/  # Stock management
+│   │   │   │   ├── order/      # Transactions
+│   │   │   │   └── ... (payment, staff, promotion, etc.)
+│   │   │   ├── shared/         # Shared backend utilities
+│   │   │   └── main.ts         # Entry point
+│   │   └── package.json
 │   │
-│   └── web-pos/                # Next.js Frontend (POS)
-│       └── src/
-│           ├── app/            # App Router pages
-│           ├── services/       # API service clients
-│           ├── store/          # Zustand global state
-│           └── offline/        # PWA offline handlers
+│   └── web-pos/                # Next.js 14 Frontend POS
+│       ├── src/
+│       │   ├── app/            # App Router pages
+│       │   ├── components/     # UI shared components
+│       │   ├── lib/            # Utils & fetch wrappers
+│       │   └── store/          # Zustand states
+│       └── next.config.js
 │
-├── packages/
-│   ├── types/                  # Shared TypeScript types
-│   ├── utils/                  # Shared utility functions
-│   ├── core/                   # Base classes, domain errors
-│   ├── logger/                 # Winston logger wrapper
-│   ├── event-bus/              # In-memory event system
-│   └── database/               # Database helpers
+├── packages/                   # Monorepo Shared Libraries
+│   ├── constants/              # Shared constants & enums
+│   ├── core/                   # Domain entities & business rules
+│   ├── database/               # Shared DB helpers
+│   ├── event-bus/              # In-memory pub/sub
+│   ├── handlers/               # Error handlers
+│   ├── logger/                 # Unified Winston logger
+│   ├── types/                  # Shared TypeScript interfaces
+│   └── utils/                  # Helper functions
 │
-├── infra/
-│   ├── docker/
-│   │   └── Dockerfile.api
-│   └── scripts/
-│       └── init-db.sql
+├── infra/                      # Infrastructure & DevOps
+│   ├── docker/                 # Custom dockerfiles
+│   └── scripts/                # Database/setup scripts
 │
-├── docker-compose.yml
-├── turbo.json
-├── tsconfig.base.json
-└── README.md
+├── .env.example
+├── docker-compose.yml          # Local infra (Postgres 55432 + Redis)
+├── package.json                # Root workspaces
+├── turbo.json                  # Turborepo config
+└── tsconfig.base.json
 ```
 
 ---
@@ -229,17 +238,39 @@ Request → TenantMiddleware → Validate Tenant → SET search_path → Route H
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Roadmap (4 Phases - 16 Sprints - 8 Tháng)
 
-- ✅ **Phase 0** — Foundation (hiện tại)
-- ⬜ **Phase 1** — Product & Inventory Management
-- ⬜ **Phase 2** — POS Transaction & Order Flow
-- ⬜ **Phase 3** — Reporting & Analytics
-- ⬜ **Phase 4** — Payment Integration
-- ⬜ **Phase 5** — Mobile App (React Native)
+### ✅ Phase 0: Nền móng & Setup (4 tuần · Sprint 1-2)
+- **Sprint 1 (Tech stack & project skeleton):** Chọn & setup stack, Monorepo structure, CI/CD pipeline, Docker compose local, Env management.
+- **Sprint 2 (Database & multi tenant foundation):** Platform DB migration, Tenant schema provisioning, Subdomain routing middleware, Auth (JWT + refresh token), Role & permission seed, Schema isolation test.
+- **Exit criteria:** Tạo được tenant mới, đăng nhập, middleware route đúng schema — không có data leak giữa tenant.
+
+### ⬜ Phase 1: MVP Bán hàng (8 tuần · Sprint 3-6)
+- **Sprint 3 (Catalog & sản phẩm):** CRUD categories, CRUD products + variants, Unit conversion, Màn hình quản lý sản phẩm, Upload ảnh sản phẩm.
+- **Sprint 4 (POS core — tạo & quản lý đơn):** Tạo order / thêm item, Modifier (size, topping), Huỷ món / huỷ đơn + log, Màn hình POS cashier, Menu grid có ảnh.
+- **Sprint 5 (Thanh toán & ca làm việc):** Thanh toán tiền mặt / chuyển khoản, Split payment, Mở / đóng ca, Đối soát cuối ca, Màn hình thanh toán, Offline mode (IndexedDB).
+- **Sprint 6 (Kho cơ bản & in bill):** Stock movement khi bán, Cảnh báo hết hàng, In bill (thermal printer), Màn hình tồn kho, Sync offline queue.
+- **Exit criteria:** Bán hàng end-to-end hoàn chỉnh — tạo đơn, thanh toán, trừ kho, in bill, đóng ca ra báo cáo tiền mặt. Offline hoạt động được ít nhất 2 giờ không mạng.
+
+### ⬜ Phase 2: Vận hành đầy đủ (8 tuần · Sprint 7-10)
+- **Sprint 7 (Nhập hàng & nhà cung cấp):** CRUD suppliers, Purchase order flow, Nhận hàng → cộng kho, Cập nhật cost_price, Màn hình nhập hàng.
+- **Sprint 8 (Recipe BOM & kiểm kê):** CRUD recipe / ingredients, Trừ kho theo recipe khi bán, Stock adjustment session, Đối chiếu kiểm kê, Màn hình kiểm kê.
+- **Sprint 9 (CRM & tích điểm):** Lookup khách qua SĐT, Cộng / trừ điểm khi bán, Tier tự động recalculate, Hoàn điểm khi huỷ đơn, Màn hình hồ sơ khách.
+- **Sprint 10 (Promotion engine & voucher):** Engine evaluate conditions, Auto-apply promotion, Voucher lookup & redeem, Promotion usage tracking, Conflict resolution (stackable).
+- **Exit criteria:** Vận hành đầy đủ cho quán cà phê thực tế — nhập hàng, recipe, kiểm kê, khách hàng tích điểm, khuyến mãi tự động chạy đúng.
+
+### ⬜ Phase 3: Báo cáo & Multi-loại hình (8 tuần · Sprint 11-14)
+- **Sprint 11 (Dashboard báo cáo chủ cửa hàng):** Doanh thu theo giờ / ngày / tháng, Lãi gộp (revenue - COGS), Top sản phẩm bán chạy, Dashboard mobile-first, Export Excel / PDF.
+- **Sprint 12 (Nhân sự & phân quyền):** CRUD users / roles, Permission matrix, Audit log mọi action nhạy cảm, Màn hình quản trị nhân viên.
+- **Sprint 13 (Module quán ăn - Table + KDS):** Table management, Gộp / tách bàn, KDS realtime (WebSocket), Màn hình bếp KDS, WebSocket scale.
+- **Sprint 14 (Module tạp hóa & onboarding):** Barcode scanner (camera), Lô hàng / hạn dùng, Tenant onboarding wizard, Config module theo store type, Billing & plan management.
+- **Exit criteria:** 3 loại hình (cà phê, quán ăn, tạp hóa) onboard được độc lập. Chủ cửa hàng tự đăng ký, cấu hình, dùng được không cần support.
+
+### ⬜ Buffer & Launch (4 tuần · Sprint 15-16)
+- **Tasks:** Security audit, Load testing, Backup & disaster recovery, Bug bash với pilot users, Polish UI / UX, Production deployment.
 
 ---
 
 ## 📄 License
 
-MIT © Retail SaaS Team
+MIT © Retail System | DatTT

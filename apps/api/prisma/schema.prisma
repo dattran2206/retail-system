@@ -1,6 +1,3 @@
-// Prisma Schema for Retail SaaS Platform Database
-// Platform DB (public schema) - chứa tenants, plans, users global
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,22 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ================================================
-// Platform-level Models (schema: public)
-// ================================================
-
 /// Gói dịch vụ (Free, Pro, Enterprise)
 model Plan {
   id          String   @id @default(uuid())
-  name        String   @unique // "FREE" | "PRO" | "ENTERPRISE"
+  name        String   @unique
   displayName String
   price       Decimal  @default(0) @db.Decimal(10, 2)
-  features    Json     // Stored as JSON: maxUsers, maxProducts, etc.
+  features    Json
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  tenants Tenant[]
+  tenants     Tenant[]
 
   @@map("plans")
 }
@@ -33,23 +25,19 @@ model Plan {
 /// Tenant (store/business) trong hệ thống
 model Tenant {
   id         String       @id @default(uuid())
-  slug       String       @unique // subdomain identifier: "my-store"
+  slug       String       @unique
   name       String
-  schemaName String       @unique // PostgreSQL schema: "tenant_my_store"
+  schemaName String       @unique
   status     TenantStatus @default(PENDING)
   planId     String
+  email      String?
+  phone      String?
+  address    String?
+  settings   Json?        @default("{}")
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
   plan       Plan         @relation(fields: [planId], references: [id])
-
-  // Contact & settings
-  email    String?
-  phone    String?
-  address  String?
-  settings Json?   @default("{}") // Tenant-specific settings
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users User[]
+  users      User[]
 
   @@index([slug])
   @@index([status])
@@ -58,30 +46,23 @@ model Tenant {
 
 /// User trong hệ thống (global level)
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
+  id           String    @id @default(uuid())
+  email        String    @unique
   passwordHash String
   name         String
-  role         UserRole @default(CASHIER)
-  isActive     Boolean  @default(true)
+  role         UserRole  @default(CASHIER)
+  isActive     Boolean   @default(true)
   tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Auth metadata
-  lastLoginAt DateTime?
-  refreshToken String?  @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  lastLoginAt  DateTime?
+  refreshToken String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([email])
   @@index([tenantId])
   @@map("users")
 }
-
-// ================================================
-// Enums
-// ================================================
 
 enum TenantStatus {
   ACTIVE
