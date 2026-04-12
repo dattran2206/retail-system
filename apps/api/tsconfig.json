@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "@retail-saas/types": ["../../packages/types/src"],
+      "@retail-saas/utils": ["../../packages/utils/src"],
+      "@retail-saas/core": ["../../packages/core/src"],
+      "@retail-saas/logger": ["../../packages/logger/src"],
+      "@retail-saas/event-bus": ["../../packages/event-bus/src"],
+      "@retail-saas/database": ["../../packages/database/src"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "prisma/**/*"]
+}

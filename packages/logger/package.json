@@ -1,0 +1,16 @@
+{
+  "name": "@retail-saas/logger",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/winston": "^2.4.4"
+  }
+}

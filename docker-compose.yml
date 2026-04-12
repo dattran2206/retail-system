@@ -1,0 +1,102 @@
+# ================================================
+# Docker Compose - Retail SaaS Local Development
+# ================================================
+# Services: PostgreSQL, Redis, API (NestJS)
+
+services:
+  # ---- PostgreSQL Database ----
+  postgres:
+    image: postgres:15-alpine
+    container_name: retail_saas_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-retail_saas_platform}
+    ports:
+      - '${DB_PORT:-55432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-retail_saas_platform}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - retail_network
+
+  # ---- Redis Cache ----
+  redis:
+    image: redis:7-alpine
+    container_name: retail_saas_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - retail_network
+
+  # ---- NestJS API ----
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.api
+      target: development
+    container_name: retail_saas_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      API_PORT: ${API_PORT:-3000}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-retail_saas_platform}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3001}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+    ports:
+      - '${API_PORT:-3000}:3000'
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:ro
+      - ./packages:/app/packages:ro
+      - api_node_modules:/app/node_modules
+      - api_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - retail_network
+    command: npm run dev --workspace=apps/api
+
+# ---- Volumes ----
+volumes:
+  postgres_data:
+    name: retail_saas_postgres_data
+  redis_data:
+    name: retail_saas_redis_data
+  api_node_modules:
+    name: retail_saas_api_node_modules
+  api_logs:
+    name: retail_saas_api_logs
+
+# ---- Networks ----
+networks:
+  retail_network:
+    name: retail_saas_network
+    driver: bridge
