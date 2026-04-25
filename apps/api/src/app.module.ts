@@ -20,6 +20,8 @@ import { UserModule } from './modules/user/user.module';
 
 // Middleware
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 // ================================================
 // AppModule - Root Application Module
@@ -48,6 +50,8 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     AuthModule,
     TenantModule,
     UserModule,
+    CatalogModule,
+    OrdersModule,
   ],
 })
 export class AppModule implements NestModule {

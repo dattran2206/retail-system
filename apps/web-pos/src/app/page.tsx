@@ -1,100 +1,33 @@
-import Link from 'next/link';
+'use client';
 
-export default function HomePage() {
+import React, { useState } from 'react';
+import MenuGrid from '@/components/pos/MenuGrid';
+import CartSidebar from '@/components/pos/CartSidebar';
+
+export default function PosPage() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontFamily: 'Inter, sans-serif',
-      }}
-    >
-      <div style={{ textAlign: 'center', padding: '2rem' }}>
-        {/* Logo */}
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #e94560, #0f3460)',
-            margin: '0 auto 1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '2rem',
-          }}
-        >
-          🛒
-        </div>
+    <div className="flex h-screen w-full bg-md-sys-color-background overflow-hidden">
+      {/* Left Area: Main POS Menu */}
+      <div className="flex-1 flex flex-col overflow-hidden border-r border-md-sys-color-outline-variant">
+        {/* Top App Bar can go here */}
+        <header className="h-16 px-6 flex items-center justify-between border-b border-md-sys-color-outline-variant bg-md-sys-color-surface">
+          <h1 className="text-xl font-medium text-md-sys-color-on-surface">Thu Ngân</h1>
+          <div className="flex items-center gap-4">
+            {/* Sync Status, User Info, etc. */}
+            <span className="w-3 h-3 rounded-full bg-green-500"></span>
+          </div>
+        </header>
 
-        <h1
-          style={{
-            fontSize: '2.5rem',
-            fontWeight: 700,
-            marginBottom: '1rem',
-            background: 'linear-gradient(90deg, #e94560, #a8edea)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          Retail SaaS POS
-        </h1>
-
-        <p
-          style={{
-            fontSize: '1.1rem',
-            color: '#a0aec0',
-            maxWidth: 400,
-            margin: '0 auto 2rem',
-            lineHeight: 1.6,
-          }}
-        >
-          Hệ thống quản lý bán lẻ đa người dùng thế hệ mới.
-          Nhanh chóng, bảo mật, và hoạt động offline.
-        </p>
-
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <Link
-            href="/auth/login"
-            style={{
-              padding: '0.75rem 2rem',
-              background: 'linear-gradient(135deg, #e94560, #c33652)',
-              color: 'white',
-              borderRadius: 8,
-              textDecoration: 'none',
-              fontWeight: 600,
-              transition: 'transform 0.2s',
-            }}
-          >
-            Đăng nhập
-          </Link>
-
-          <a
-            href="http://localhost:3000/docs"
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              padding: '0.75rem 2rem',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: 'white',
-              borderRadius: 8,
-              textDecoration: 'none',
-              fontWeight: 600,
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            API Docs
-          </a>
-        </div>
-
-        <p style={{ marginTop: '3rem', color: '#4a5568', fontSize: '0.85rem' }}>
-          Phase 0 — Foundation Built ✅
-        </p>
+        {/* Scrollable Menu Area */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <MenuGrid />
+        </main>
       </div>
-    </main>
+
+      {/* Right Area: Cart & Checkout Sidebar */}
+      <div className="w-[400px] flex-shrink-0 bg-md-sys-color-surface">
+        <CartSidebar />
+      </div>
+    </div>
   );
 }
