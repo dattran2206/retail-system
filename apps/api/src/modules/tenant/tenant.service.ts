@@ -145,6 +145,30 @@ export class TenantService {
     if (!exists) {
       await this.prisma.createTenantSchema(schemaName);
       this.logger.log(`Schema "${schemaName}" created`);
+      
+      // Chạy db push để tạo các bảng (products, categories, etc.) trong schema mới
+      try {
+        const util = require('util');
+        const exec = util.promisify(require('child_process').exec);
+        
+        // Tạo DATABASE_URL mới trỏ vào schema vừa tạo
+        const dbUrl = new URL(process.env.DATABASE_URL || '');
+        dbUrl.searchParams.set('schema', schemaName);
+        
+        this.logger.log(`Provisioning tables for schema "${schemaName}"...`);
+        // Chạy lệnh prisma db push
+        await exec('npx prisma db push --skip-generate', {
+          env: {
+            ...process.env,
+            DATABASE_URL: dbUrl.toString(),
+          },
+        });
+        
+        this.logger.log(`✅ Tables provisioned successfully for schema "${schemaName}"`);
+      } catch (error) {
+        this.logger.error(`❌ Failed to provision tables for schema "${schemaName}"`, error);
+        throw error;
+      }
     } else {
       this.logger.debug(`Schema "${schemaName}" already exists`);
     }
