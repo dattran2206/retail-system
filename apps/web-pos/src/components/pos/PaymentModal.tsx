@@ -34,6 +34,11 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
   });
   
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  
+  // Formatter chuẩn tiếng Việt
+  const formatMoney = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN').format(amount);
+  };
 
   // Dọn dẹp polling khi unmount
   useEffect(() => {
@@ -62,6 +67,7 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
 
       setTimeout(() => {
         clearCart();
+        window.dispatchEvent(new CustomEvent('refresh-menu'));
         onSuccess();
       }, 5000); // Tăng thời gian delay để kịp in
     } catch (err: any) {
@@ -107,6 +113,7 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
 
           setTimeout(() => {
             clearCart();
+            window.dispatchEvent(new CustomEvent('refresh-menu'));
             onSuccess();
           }, 5000);
         }
@@ -139,6 +146,7 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
           <button 
             onClick={() => {
               clearCart();
+              window.dispatchEvent(new CustomEvent('refresh-menu'));
               onSuccess();
             }}
             className="w-full py-4 border-2 border-md-sys-color-outline-variant text-md-sys-color-on-surface-variant rounded-2xl font-bold"
@@ -171,7 +179,7 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
           <div className="space-y-6 flex-1">
             <div className="p-4 rounded-2xl bg-md-sys-color-primary text-md-sys-color-on-primary shadow-md3-2">
               <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Tổng tiền cần thu</span>
-              <p className="text-3xl font-black">{totalAmount.toLocaleString()}đ</p>
+              <p className="text-3xl font-black">{formatMoney(totalAmount)}đ</p>
             </div>
 
             <div className="space-y-3">
@@ -233,11 +241,17 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
+                      type="text"
                       autoFocus
-                      value={cashReceived || ''}
-                      onChange={(e) => setCashReceived(Number(e.target.value))}
+                      value={cashReceived ? formatMoney(cashReceived) : ''}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\./g, '');
+                        if (!isNaN(Number(val))) {
+                          setCashReceived(Number(val));
+                        }
+                      }}
                       className="w-full px-8 py-6 bg-md-sys-color-surface-container-high border-2 border-md-sys-color-outline-variant rounded-[32px] text-4xl font-black focus:border-md-sys-color-primary outline-none transition-all pr-16"
+                      placeholder="0"
                     />
                     <span className="absolute right-8 top-1/2 -translate-y-1/2 text-xl font-bold opacity-40 text-md-sys-color-on-surface">đ</span>
                   </div>
@@ -250,7 +264,7 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
                       onClick={() => setCashReceived(val)}
                       className="py-3 rounded-xl border border-md-sys-color-outline-variant font-bold text-xs hover:bg-md-sys-color-primary hover:text-white transition-all"
                     >
-                      {val.toLocaleString()}đ
+                      {formatMoney(val)}đ
                     </button>
                   ))}
                   <button onClick={() => setCashReceived(0)} className="py-3 rounded-xl border border-md-sys-color-outline-variant font-bold text-xs hover:bg-md-sys-color-error hover:text-white">Xóa</button>
@@ -260,7 +274,7 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
                   <div>
                     <span className="text-xs font-bold uppercase tracking-widest opacity-60">Tiền thừa trả khách</span>
                     <p className={`text-4xl font-black ${change > 0 ? 'text-green-600' : 'text-md-sys-color-on-surface'}`}>
-                      {change.toLocaleString()}đ
+                      {formatMoney(change)}đ
                     </p>
                   </div>
                   <div className={`p-4 rounded-full ${change > 0 ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
@@ -318,7 +332,7 @@ export default function PaymentModal({ orderId, totalAmount, onSuccess, onClose 
                   <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
                     <div className="p-4 rounded-2xl bg-md-sys-color-surface-container text-center">
                       <span className="text-[10px] font-bold uppercase opacity-60">Số tiền</span>
-                      <p className="font-black">{totalAmount.toLocaleString()}đ</p>
+                      <p className="font-black">{formatMoney(totalAmount)}đ</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-md-sys-color-surface-container text-center">
                       <span className="text-[10px] font-bold uppercase opacity-60">Nội dung</span>

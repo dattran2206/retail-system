@@ -61,9 +61,14 @@ export default function CartSidebar() {
         id: response.id,
         totalAmount: response.totalAmount
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Checkout failed', err);
-      window.alert('Tạo đơn hàng thất bại, vui lòng thử lại.');
+      const errorMsg = err.response?.data?.message || '';
+      if (errorMsg.includes('Insufficient stock')) {
+        window.alert('Lỗi: Một số sản phẩm trong giỏ hàng đã hết hàng hoặc không đủ tồn kho. Vui lòng kiểm tra lại!');
+      } else {
+        window.alert('Tạo đơn hàng thất bại, vui lòng thử lại.');
+      }
     } finally {
       setIsCreatingOrder(false);
     }

@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 
 @Injectable()
 export class StripeService {
-  private stripe: Stripe;
+  private stripe: any;
   private readonly logger = new Logger(StripeService.name);
   private readonly webhookSecret: string;
   private readonly successUrl: string;
@@ -12,16 +12,16 @@ export class StripeService {
 
   constructor(private configService: ConfigService) {
     const secretKey = this.configService.get<string>('stripe.secretKey');
-    this.webhookSecret = this.configService.get<string>('stripe.webhookSecret');
-    this.successUrl = this.configService.get<string>('stripe.successUrl');
-    this.cancelUrl = this.configService.get<string>('stripe.cancelUrl');
+    this.webhookSecret = this.configService.get<string>('stripe.webhookSecret') || '';
+    this.successUrl = this.configService.get<string>('stripe.successUrl') || '';
+    this.cancelUrl = this.configService.get<string>('stripe.cancelUrl') || '';
 
     if (!secretKey) {
       this.logger.warn('STRIPE_SECRET_KEY is missing! Payment features will not work.');
     }
 
     this.stripe = new Stripe(secretKey || '', {
-      apiVersion: '2025-03-31.basil',
+      apiVersion: '2024-12-18.acacia' as any,
     });
 
     this.logger.log('Stripe initialized (test mode)');
@@ -63,7 +63,7 @@ export class StripeService {
     };
   }
 
-  constructWebhookEvent(payload: Buffer, signature: string): Stripe.Event {
+  constructWebhookEvent(payload: Buffer, signature: string): any {
     return this.stripe.webhooks.constructEvent(
       payload,
       signature,

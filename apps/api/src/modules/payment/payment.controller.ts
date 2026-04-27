@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, UseGuards, Req, HttpCode, HttpStatus, RawBodyRequest } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, UseGuards, Req, HttpCode, HttpStatus, RawBodyRequest, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -44,6 +44,11 @@ export class PaymentWebhookController {
   @ApiOperation({ summary: 'Webhook nhận thông báo từ Stripe' })
   async handleWebhook(@Req() req: RawBodyRequest<Request>) {
     const signature = req.headers['stripe-signature'] as string;
+    
+    if (!req.rawBody) {
+      throw new BadRequestException('Missing raw body');
+    }
+    
     return this.paymentService.handleStripeWebhook(req.rawBody, signature);
   }
 }

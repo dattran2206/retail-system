@@ -1,0 +1,28 @@
+<svg width="40" height="40" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="128" fill="#008080"/>
+  
+  <!-- Shopping Cart -->
+  <path d="M120 180H160L190 320C192 330 200 340 210 340H400C410 340 418 330 420 320L440 220H185" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="220" cy="390" r="25" fill="white"/>
+  <circle cx="380" cy="390" r="25" fill="white"/>
+  
+  <!-- Grid lines for cart -->
+  <path d="M230 220V320M300 220V320M370 220V320M190 270H430" stroke="white" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- Receipt Paper -->
+  <path d="M230 150H320C325 150 330 155 330 160V310L315 300L300 310L285 300L270 310L255 300L240 310L230 300V150Z" fill="#E0F2F1"/>
+  <path d="M320 150C335 150 350 160 350 180V210H330V180C330 170 325 165 320 165H300" fill="#B2DFDB"/>
+  
+  <!-- Receipt Details -->
+  <path d="M245 175H305M245 190H305M245 205H280M310 205H315M310 190H315M310 175H315" stroke="#008080" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- QR Code Mockup -->
+  <rect x="255" y="240" width="40" height="40" fill="#008080"/>
+  <rect x="258" y="243" width="10" height="10" fill="#E0F2F1"/>
+  <rect x="282" y="243" width="10" height="10" fill="#E0F2F1"/>
+  <rect x="258" y="267" width="10" height="10" fill="#E0F2F1"/>
+  <rect x="272" y="255" width="6" height="6" fill="#E0F2F1"/>
+
+  <path d="M290 225H315" stroke="#008080" stroke-width="6" stroke-linecap="round"/>
+  <path d="M280 225H285" stroke="#008080" stroke-width="4" stroke-linecap="round"/>
+</svg>

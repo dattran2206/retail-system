@@ -11,11 +11,12 @@ export default function MenuGrid() {
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Gọi song song cả Products và Categories
         const [prodRes, catRes] = await Promise.all([
           catalogService.getProducts(),
           catalogService.getCategories()
@@ -30,6 +31,15 @@ export default function MenuGrid() {
       }
     };
     fetchData();
+  }, [refreshTrigger]);
+
+  // Lắng nghe sự kiện làm mới từ các component khác (ví dụ sau khi thanh toán)
+  useEffect(() => {
+    const handleRefresh = () => {
+      setRefreshTrigger(prev => prev + 1);
+    };
+    window.addEventListener('refresh-menu', handleRefresh);
+    return () => window.removeEventListener('refresh-menu', handleRefresh);
   }, []);
 
   // Lọc sản phẩm theo Category đã chọn
@@ -87,6 +97,11 @@ export default function MenuGrid() {
           {filteredProducts.map((p) => {
             const defaultVariant = p.variants?.[0];
             const displayPrice = defaultVariant ? Number(defaultVariant.price) : 0;
+            
+            // Tính tổng tồn kho của tất cả các biến thể
+            const totalStock = p.variants?.reduce((sum: number, v: any) => {
+              return sum + (v.stockLevel?.quantity || 0);
+            }, 0);
 
             return (
               <ProductCard 
@@ -94,6 +109,7 @@ export default function MenuGrid() {
                 name={p.name}
                 price={displayPrice}
                 imageUrl={p.imageUrl}
+                stockQuantity={totalStock}
                 onClick={() => setSelectedProduct(p)}
               />
             );

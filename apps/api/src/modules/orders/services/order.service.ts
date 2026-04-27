@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateOrderDto, CancelOrderDto } from '../dto/order.dto';
-import { OrderStatus, OrderType, TableStatus } from '@prisma/client';
+import { OrderStatus, OrderType, TableStatus, MovementType } from '@prisma/client';
+import { InventoryService } from '../../inventory/inventory.service';
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inventoryService: InventoryService,
+  ) {}
 
   async findAll(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
@@ -62,6 +66,20 @@ export class OrderService {
         }
       }
 
+      // 1. Fetch Shift & Tenant
+      const shift = await tx.shift.findUnique({
+        where: { id: dto.shiftId },
+        select: { id: true, tenantId: true, userId: true }
+      });
+      if (!shift) throw new NotFoundException('Không tìm thấy ca làm việc');
+
+      // 1.5 Check Stock Availability
+      await this.inventoryService.checkStockAvailability(
+        shift.tenantId,
+        dto.items.map(item => ({ variantId: item.variantId, quantity: item.quantity })),
+        tx
+      );
+
       // 2. Fetch pricing for variants and modifiers
       let totalAmount = 0;
       
@@ -111,12 +129,6 @@ export class OrderService {
       });
       const orderNumber = `ORD-${dateStr}-${String(orderCount + 1).padStart(4, '0')}`;
 
-      // Lấy tenantId từ shift hoặc user (MVP: lấy từ shift cho chắc chắn)
-      const shift = await tx.shift.findUnique({
-        where: { id: dto.shiftId },
-        select: { tenantId: true }
-      });
-      if (!shift) throw new NotFoundException('Không tìm thấy ca làm việc');
 
       // 4. Create Order
       const order = await tx.order.create({
@@ -165,6 +177,7 @@ export class OrderService {
             }))
           });
         }
+
       }
 
       // Trả về đơn hàng kèm theo quan hệ (sử dụng tx thay vì this.findById)
@@ -194,6 +207,20 @@ export class OrderService {
           where: { id: order.tableId },
           data: { status: TableStatus.AVAILABLE }
         });
+      }
+
+      // Revert Stock for each item ONLY if order was COMPLETED
+      if (order.status === OrderStatus.COMPLETED) {
+        for (const item of order.items) {
+          await this.inventoryService.recordMovement({
+            tenantId: order.tenantId,
+            variantId: item.variantId,
+            type: MovementType.SALE_RETURN,
+            quantity: item.quantity,
+            referenceId: order.id,
+            reason: dto.reason,
+          }, tx);
+        }
       }
 
       return tx.order.update({

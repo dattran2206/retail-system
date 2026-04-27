@@ -1,8 +1,9 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { StripeService } from './stripe.service';
-import { OrderStatus, PaymentMethod, PaymentStatus, TableStatus } from '@prisma/client';
+import { OrderStatus, PaymentMethod, PaymentStatus, TableStatus, MovementType } from '@prisma/client';
 import Stripe from 'stripe';
+import { InventoryService } from '../inventory/inventory.service';
 
 @Injectable()
 export class PaymentService {
@@ -11,13 +12,18 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
+    private readonly inventoryService: InventoryService,
   ) {}
 
   async payWithCash(orderId: string, shiftId: string) {
     return this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id: orderId },
-        include: { payments: true }
+        include: { 
+          payments: true,
+          items: true,
+          shift: true
+        }
       });
 
       if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
@@ -61,6 +67,18 @@ export class PaymentService {
         });
       }
 
+      // 4. Trừ kho chính thức
+      for (const item of order.items) {
+        await this.inventoryService.recordMovement({
+          tenantId: order.tenantId,
+          variantId: item.variantId,
+          type: MovementType.SALE,
+          quantity: item.quantity,
+          referenceId: order.id,
+          createdBy: order.shift?.userId,
+        }, tx);
+      }
+
       return { success: true, orderId };
     });
   }
@@ -98,7 +116,7 @@ export class PaymentService {
   }
 
   async handleStripeWebhook(payload: Buffer, signature: string) {
-    let event: Stripe.Event;
+    let event: any;
 
     try {
       event = this.stripeService.constructWebhookEvent(payload, signature);
@@ -110,7 +128,7 @@ export class PaymentService {
     this.logger.log(`Stripe webhook received: ${event.type}`);
 
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object as any;
       const orderId = session.metadata?.orderId;
 
       if (!orderId) {
@@ -128,7 +146,11 @@ export class PaymentService {
     return this.prisma.$transaction(async (tx) => {
       const payment = await tx.payment.findFirst({
         where: { orderId, status: PaymentStatus.PENDING, method: PaymentMethod.TRANSFER },
-        include: { order: true }
+        include: { 
+          order: {
+            include: { items: true, shift: true }
+          }
+        }
       });
 
       if (!payment) {
@@ -172,6 +194,18 @@ export class PaymentService {
           where: { id: payment.order.tableId },
           data: { status: TableStatus.AVAILABLE }
         });
+      }
+
+      // 5. Trừ kho chính thức
+      for (const item of payment.order.items) {
+        await this.inventoryService.recordMovement({
+          tenantId: payment.tenantId,
+          variantId: item.variantId,
+          type: MovementType.SALE,
+          quantity: item.quantity,
+          referenceId: payment.orderId,
+          createdBy: payment.order.shift?.userId,
+        }, tx);
       }
 
       this.logger.log(`✅ Stripe payment completed for order ${payment.order.orderNumber}`);

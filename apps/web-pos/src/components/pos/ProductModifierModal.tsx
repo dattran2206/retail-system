@@ -13,10 +13,17 @@ export default function ProductModifierModal({ product, onClose }: ProductModifi
   const { addItem } = useCartStore();
   
   // State for selections
-  const [selectedVariant, setSelectedVariant] = useState(product.variants[0]);
+  const [selectedVariant, setSelectedVariant] = useState(() => {
+    // Ưu tiên chọn biến thể còn hàng đầu tiên
+    const availableVariant = product.variants.find((v: any) => (v.stockLevel?.quantity || 0) > 0);
+    return availableVariant || product.variants[0];
+  });
   const [selectedModifiers, setSelectedModifiers] = useState<any[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState('');
+
+  const availableStock = selectedVariant.stockLevel?.quantity || 0;
+  const isOutOfStock = availableStock <= 0;
 
   const toggleModifier = (group: any, modifier: any) => {
     const isSingle = group.selectionType === 'SINGLE';
@@ -87,20 +94,39 @@ export default function ProductModifierModal({ product, onClose }: ProductModifi
             <section>
               <h3 className="text-sm font-bold text-md-sys-color-primary mb-3 uppercase tracking-wider">Kích cỡ / Loại</h3>
               <div className="grid grid-cols-2 gap-3">
-                {product.variants.map((v: any) => (
-                  <button
-                    key={v.id}
-                    onClick={() => setSelectedVariant(v)}
-                    className={`p-4 rounded-md3-medium border-2 text-left transition-all ${
-                      selectedVariant.id === v.id 
-                        ? 'border-md-sys-color-primary bg-md-sys-color-primary-container text-md-sys-color-on-primary-container shadow-md3-1' 
-                        : 'border-md-sys-color-outline-variant hover:border-md-sys-color-outline'
-                    }`}
-                  >
-                    <div className="font-bold">{v.name}</div>
-                    <div className="text-sm opacity-80">{Number(v.price).toLocaleString('vi-VN')}đ</div>
-                  </button>
-                ))}
+                {product.variants.map((v: any) => {
+                  const vStock = v.stockLevel?.quantity || 0;
+                  const vOutOfStock = vStock <= 0;
+                  
+                  return (
+                    <button
+                      key={v.id}
+                      disabled={vOutOfStock}
+                      onClick={() => {
+                        setSelectedVariant(v);
+                        if (quantity > vStock) setQuantity(Math.max(1, vStock));
+                      }}
+                      className={`p-4 rounded-md3-medium border-2 text-left transition-all relative ${
+                        selectedVariant.id === v.id 
+                          ? 'border-md-sys-color-primary bg-md-sys-color-primary-container text-md-sys-color-on-primary-container shadow-md3-1' 
+                          : vOutOfStock
+                            ? 'border-md-sys-color-outline-variant opacity-50 cursor-not-allowed bg-gray-100'
+                            : 'border-md-sys-color-outline-variant hover:border-md-sys-color-outline'
+                      }`}
+                    >
+                      <div className="font-bold flex justify-between items-center">
+                        <span>{v.name}</span>
+                        {vOutOfStock && (
+                          <span className="text-[10px] bg-md-sys-color-error text-md-sys-color-on-error px-1.5 py-0.5 rounded-full">Hết</span>
+                        )}
+                      </div>
+                      <div className="text-sm opacity-80">{Number(v.price).toLocaleString('vi-VN')}đ</div>
+                      {!vOutOfStock && (
+                        <div className="text-[10px] mt-1 opacity-60">Còn: {vStock}</div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -157,14 +183,16 @@ export default function ProductModifierModal({ product, onClose }: ProductModifi
           <div className="flex items-center gap-4 bg-md-sys-color-surface-variant rounded-full px-4 py-2 border border-md-sys-color-outline-variant">
             <button 
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="p-1 hover:bg-black/10 rounded-full transition-colors"
+              disabled={isOutOfStock || quantity <= 1}
+              className="p-1 hover:bg-black/10 rounded-full transition-colors disabled:opacity-30"
             >
               <Minus size={20} />
             </button>
             <span className="text-xl font-bold w-8 text-center">{quantity}</span>
             <button 
               onClick={() => setQuantity(quantity + 1)}
-              className="p-1 hover:bg-black/10 rounded-full transition-colors"
+              disabled={isOutOfStock || quantity >= availableStock}
+              className="p-1 hover:bg-black/10 rounded-full transition-colors disabled:opacity-30"
             >
               <Plus size={20} />
             </button>
@@ -172,10 +200,15 @@ export default function ProductModifierModal({ product, onClose }: ProductModifi
 
           <button 
             onClick={handleAddToCart}
-            className="flex-1 py-4 rounded-full bg-md-sys-color-primary text-md-sys-color-on-primary font-bold shadow-md3-2 hover:shadow-md3-3 active:scale-95 transition-all flex justify-between px-8"
+            disabled={isOutOfStock}
+            className={`flex-1 py-4 rounded-full font-bold shadow-md3-2 hover:shadow-md3-3 active:scale-95 transition-all flex justify-between px-8 ${
+              isOutOfStock 
+                ? "bg-md-sys-color-outline text-white cursor-not-allowed" 
+                : "bg-md-sys-color-primary text-md-sys-color-on-primary"
+            }`}
           >
-            <span>THÊM VÀO GIỎ</span>
-            <span>{calculateTotalPrice().toLocaleString('vi-VN')}đ</span>
+            <span>{isOutOfStock ? "TẠM HẾT HÀNG" : "THÊM VÀO GIỎ"}</span>
+            {!isOutOfStock && <span>{calculateTotalPrice().toLocaleString('vi-VN')}đ</span>}
           </button>
         </div>
       </div>
