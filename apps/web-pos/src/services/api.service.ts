@@ -4,7 +4,7 @@ import axios from 'axios';
 // API Service - Base HTTP Client
 // ================================================
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 // Lấy tenant từ subdomain hoặc env
 function getTenantId(): string {
@@ -46,7 +46,13 @@ apiClient.interceptors.request.use((config) => {
 
 // Response interceptor: handle errors
 apiClient.interceptors.response.use(
-  (response) => response.data?.data ?? response.data,
+  (response) => {
+    // Nếu API trả về cấu trúc { success, data }, hãy lấy data ngay cả khi nó là null
+    if (response.data && Object.prototype.hasOwnProperty.call(response.data, 'data')) {
+      return response.data.data;
+    }
+    return response.data;
+  },
   (error) => {
     const message = error.response?.data?.error?.message || error.message;
     return Promise.reject(new Error(message));

@@ -7,6 +7,7 @@
     "build": "nest build",
     "start:dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/main.ts",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/main.ts",
+    "debug": "ts-node-dev --inspect=0.0.0.0:9229 --respawn --transpile-only -r tsconfig-paths/register src/main.ts",
     "start": "node dist/main",
     "lint": "eslint src --ext .ts",
     "test": "jest",
@@ -41,6 +42,7 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "stripe": "^22.1.0",
     "uuid": "^10.0.0",
     "winston": "^3.13.0",
     "winston-daily-rotate-file": "^5.0.0"

@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateOrderDto, CancelOrderDto } from '../dto/order.dto';
-import { OrderStatus } from '@prisma/client';
-import { generateId } from '@retail-saas/utils';
+import { OrderStatus, OrderType, TableStatus } from '@prisma/client';
 
 @Injectable()
 export class OrderService {
@@ -14,6 +13,8 @@ export class OrderService {
       this.prisma.order.findMany({
         skip, take: limit,
         include: {
+          tenant: true,
+          table: { include: { area: true } },
           items: {
             include: { variant: true, modifiers: { include: { modifier: true } } }
           }
@@ -33,6 +34,8 @@ export class OrderService {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
+        tenant: true,
+        table: { include: { area: true } },
         items: {
           include: { variant: true, modifiers: { include: { modifier: true } } }
         }
@@ -44,14 +47,29 @@ export class OrderService {
 
   async create(dto: CreateOrderDto) {
     return this.prisma.$transaction(async (tx) => {
-      // 1. Fetch pricing for variants and modifiers
+      // 1. Validate Table if DINE_IN
+      if (dto.orderType === OrderType.DINE_IN && !dto.tableId) {
+        throw new BadRequestException('Bắt buộc chọn bàn cho đơn tại chỗ');
+      }
+
+      if (dto.tableId) {
+        const table = await tx.table.findUnique({ where: { id: dto.tableId } });
+        if (!table) throw new NotFoundException(`Bàn ${dto.tableId} không tồn tại`);
+        if (table.status === TableStatus.OCCUPIED) {
+           // Trong thực tế có thể cho phép gọi thêm món vào bàn đang dùng, 
+           // nhưng để đơn giản cho MVP ta coi như tạo đơn mới thì bàn phải trống
+           // hoặc xử lý logic gộp đơn sau.
+        }
+      }
+
+      // 2. Fetch pricing for variants and modifiers
       let totalAmount = 0;
       
       const orderItemsData = await Promise.all(dto.items.map(async (item) => {
         const variant = await tx.productVariant.findUnique({
           where: { id: item.variantId }
         });
-        if (!variant) throw new NotFoundException(`Variant ${item.variantId} not found`);
+        if (!variant) throw new NotFoundException(`Biến thể ${item.variantId} không tồn tại`);
 
         let itemTotal = Number(variant.price) * item.quantity;
         
@@ -59,7 +77,7 @@ export class OrderService {
         if (item.modifiers && item.modifiers.length > 0) {
           for (const mod of item.modifiers) {
             const modifierInfo = await tx.modifier.findUnique({ where: { id: mod.modifierId } });
-            if (!modifierInfo) throw new NotFoundException(`Modifier ${mod.modifierId} not found`);
+            if (!modifierInfo) throw new NotFoundException(`Topping ${mod.modifierId} không tồn tại`);
             
             const modPrice = Number(modifierInfo.price) * mod.quantity;
             itemTotal += modPrice;
@@ -83,29 +101,49 @@ export class OrderService {
         };
       }));
 
-      // Apply discount
       const discount = dto.discount || 0;
       const finalAmount = totalAmount - discount;
 
-      // 2. Generate Order Number
+      // 3. Generate Order Number
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const orderCount = await tx.order.count({
         where: { createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) } }
       });
       const orderNumber = `ORD-${dateStr}-${String(orderCount + 1).padStart(4, '0')}`;
 
-      // 3. Create Order
+      // Lấy tenantId từ shift hoặc user (MVP: lấy từ shift cho chắc chắn)
+      const shift = await tx.shift.findUnique({
+        where: { id: dto.shiftId },
+        select: { tenantId: true }
+      });
+      if (!shift) throw new NotFoundException('Không tìm thấy ca làm việc');
+
+      // 4. Create Order
       const order = await tx.order.create({
         data: {
+          tenantId: shift.tenantId,
           orderNumber,
-          status: OrderStatus.COMPLETED, // Theo yêu cầu MVP, tạo xong là COMPLETED
+          status: OrderStatus.PENDING,
+          orderType: dto.orderType,
+          tableId: dto.tableId,
+          shiftId: dto.shiftId,
+          deliveryPartner: dto.deliveryPartner,
+          customerName: dto.customerName,
           totalAmount: finalAmount,
           discount: discount,
           paymentMethod: dto.paymentMethod,
         }
       });
 
-      // 4. Create Order Items & Modifiers
+      // 5. Update Table Status if DINE_IN
+      if (dto.orderType === OrderType.DINE_IN && dto.tableId) {
+        await tx.table.update({
+          where: { id: dto.tableId },
+          data: { status: TableStatus.OCCUPIED }
+        });
+      }
+
+      // 6. Create Order Items & Modifiers
       for (const item of orderItemsData) {
         const orderItem = await tx.orderItem.create({
           data: {
@@ -129,22 +167,42 @@ export class OrderService {
         }
       }
 
-      return this.findById(order.id);
+      // Trả về đơn hàng kèm theo quan hệ (sử dụng tx thay vì this.findById)
+      return tx.order.findUnique({
+        where: { id: order.id },
+        include: {
+          tenant: true,
+          table: { include: { area: true } },
+          items: {
+            include: { variant: true, modifiers: { include: { modifier: true } } }
+          }
+        }
+      });
     });
   }
 
   async cancel(id: string, dto: CancelOrderDto) {
     const order = await this.findById(id);
     if (order.status === OrderStatus.CANCELLED) {
-      throw new BadRequestException(`Order ${id} is already cancelled`);
+      throw new BadRequestException(`Đơn hàng ${id} đã bị hủy trước đó`);
     }
 
-    return this.prisma.order.update({
-      where: { id },
-      data: {
-        status: OrderStatus.CANCELLED,
-        cancelReason: dto.reason,
+    return this.prisma.$transaction(async (tx) => {
+      // Nếu là đơn tại bàn, giải phóng bàn khi hủy đơn
+      if (order.tableId) {
+        await tx.table.update({
+          where: { id: order.tableId },
+          data: { status: TableStatus.AVAILABLE }
+        });
       }
+
+      return tx.order.update({
+        where: { id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          cancelReason: dto.reason,
+        }
+      });
     });
   }
 }

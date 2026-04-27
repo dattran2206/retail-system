@@ -16,6 +16,7 @@ import { AppLoggerService } from './shared/logger/logger.service';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
+    rawBody: true, // Cần cho Stripe webhook signature verification
   });
 
   // ---- Logger ----
@@ -25,7 +26,7 @@ async function bootstrap(): Promise<void> {
   // ---- Config ----
   const config = app.get(ConfigService);
   const port = config.get<number>('app.port') || 3000;
-  const apiPrefix = config.get<string>('app.apiPrefix') || '/api/v1';
+  const apiPrefix = config.get<string>('app.apiPrefix');
   const corsOrigins = config.get<string[]>('app.corsOrigins') || ['http://localhost:3001'];
   const isProduction = config.get<boolean>('app.isProduction') || false;
 
@@ -41,13 +42,17 @@ async function bootstrap(): Promise<void> {
   });
 
   // ---- Global Prefix ----
-  app.setGlobalPrefix(apiPrefix);
+  if (apiPrefix && apiPrefix !== '/') {
+    app.setGlobalPrefix(apiPrefix);
+  }
 
-  // ---- Versioning (optional, future-ready) ----
+  // ---- Versioning (Disabled per user request) ----
+  /*
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
+  */
 
   // ---- Global Pipes ----
   app.useGlobalPipes(

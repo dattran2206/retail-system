@@ -20,6 +20,17 @@ export const catalogService = {
    */
   async getProductDetail(id: string) {
     return apiClient.get(`/catalog/products/${id}`);
+  },
+
+  /**
+   * Lấy danh sách khu vực và bàn
+   */
+  async getAreas() {
+    return apiClient.get('/tables/areas');
+  },
+
+  async getTables(areaId?: string) {
+    return apiClient.get('/tables', { params: { areaId } });
   }
 };
 

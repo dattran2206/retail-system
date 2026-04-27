@@ -22,6 +22,8 @@ import { UserModule } from './modules/user/user.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { ShiftModule } from './modules/shift/shift.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 // ================================================
 // AppModule - Root Application Module
@@ -52,6 +54,8 @@ import { OrdersModule } from './modules/orders/orders.module';
     UserModule,
     CatalogModule,
     OrdersModule,
+    ShiftModule,
+    PaymentModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -62,6 +66,9 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer
       .apply(TenantMiddleware)
+      .exclude(
+        { path: 'payments/webhook', method: RequestMethod.POST }
+      )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }

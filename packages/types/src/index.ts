@@ -103,6 +103,7 @@ export interface PaginationParams {
 // ---- Auth Types ----
 
 export interface JwtPayload {
+  id: string;
   sub: string;       // user id
   email: string;
   role: UserRole;

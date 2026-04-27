@@ -39,7 +39,8 @@ export class VariantService {
       const existing = await this.prisma.productVariant.findFirst({ where: { sku: dto.sku, id: { not: id } } });
       if (existing) throw new ConflictException(`Variant with SKU ${dto.sku} already exists`);
     }
-    return this.prisma.productVariant.update({ where: { id }, data: dto });
+    const { productId, ...updateData } = dto;
+    return this.prisma.productVariant.update({ where: { id }, data: updateData as any });
   }
 
   async remove(id: string) {
