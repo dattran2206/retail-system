@@ -14,7 +14,9 @@ export class ProductService {
         skip, take: limit,
         include: { 
           category: true, 
-          variants: true, 
+          variants: {
+            include: { stockLevel: true }
+          }, 
           unitConversions: true,
           productModifiers: {
             include: {
@@ -42,7 +44,9 @@ export class ProductService {
       where: { id },
       include: { 
         category: true, 
-        variants: true, 
+        variants: {
+          include: { stockLevel: true }
+        }, 
         unitConversions: true,
         productModifiers: {
           include: {

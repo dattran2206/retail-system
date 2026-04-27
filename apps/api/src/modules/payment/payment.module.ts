@@ -3,7 +3,10 @@ import { PaymentController, PaymentWebhookController } from './payment.controlle
 import { PaymentService } from './payment.service';
 import { StripeService } from './stripe.service';
 
+import { InventoryModule } from '../inventory/inventory.module';
+
 @Module({
+  imports: [InventoryModule],
   controllers: [PaymentController, PaymentWebhookController],
   providers: [PaymentService, StripeService],
   exports: [PaymentService],

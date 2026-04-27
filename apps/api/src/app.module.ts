@@ -24,6 +24,8 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ShiftModule } from './modules/shift/shift.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 
 // ================================================
 // AppModule - Root Application Module
@@ -56,6 +58,8 @@ import { PaymentModule } from './modules/payment/payment.module';
     OrdersModule,
     ShiftModule,
     PaymentModule,
+    NotificationModule,
+    InventoryModule,
   ],
 })
 export class AppModule implements NestModule {

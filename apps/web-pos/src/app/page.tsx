@@ -86,9 +86,14 @@ export default function PosPage() {
         {/* Top App Bar */}
         <header className="h-20 px-6 flex items-center justify-between border-b border-md-sys-color-outline-variant bg-md-sys-color-surface-container">
           <div className="flex items-center gap-8">
-            <div className="flex flex-col">
-              <h1 className="text-xl font-black text-md-sys-color-primary tracking-tighter leading-none">RETAIL POS</h1>
-              <span className="text-[10px] font-bold text-md-sys-color-on-surface-variant uppercase tracking-widest mt-1">v1.2.0 Sprint 5</span>
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 drop-shadow-sm transition-transform hover:scale-105 duration-300">
+                <img src="/icons/logo.svg" alt="Retail POS Logo" className="w-full h-full" />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-lg font-black text-md-sys-color-primary tracking-tighter leading-tight">RETAIL POS</h1>
+                <span className="text-[10px] font-bold text-md-sys-color-on-surface-variant uppercase tracking-widest">v1.2.0 Sprint 6</span>
+              </div>
             </div>
             
             {/* Order Type Switcher */}

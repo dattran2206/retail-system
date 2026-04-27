@@ -32,11 +32,11 @@ export default function LoginPage() {
         
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-md-sys-color-primary-container text-md-sys-color-on-primary-container mb-4 shadow-md3-1">
-            <ShoppingCart size={32} />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4 drop-shadow-md transition-transform hover:scale-105 duration-300">
+            <img src="/icons/logo.svg" alt="Retail POS Logo" className="w-full h-full" />
           </div>
-          <h1 className="text-2xl font-bold text-md-sys-color-on-surface">Retail SaaS POS</h1>
-          <p className="text-md-sys-color-on-surface-variant mt-2 text-sm">
+          <h1 className="text-3xl font-black text-md-sys-color-primary tracking-tighter leading-tight uppercase">RETAIL POS</h1>
+          <p className="text-md-sys-color-on-surface-variant mt-2 text-sm font-medium">
             Hệ thống quản lý bán hàng đa chi nhánh
           </p>
         </div>

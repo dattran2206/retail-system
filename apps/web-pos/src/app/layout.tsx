@@ -3,15 +3,19 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Retail SaaS POS',
-    default: 'Retail SaaS POS',
+    template: '%s | RETAIL POS',
+    default: 'RETAIL POS | Hệ thống quản lý bán hàng',
   },
   description: 'Multi-tenant Retail Point of Sale System',
+  icons: {
+    icon: '/icons/logo.svg',
+    apple: '/icons/logo.svg',
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Retail SaaS POS',
+    title: 'RETAIL POS',
   },
 };
 

@@ -76,12 +76,30 @@ async function main() {
   console.log('  ✅ Modifier Groups checked/created');
 
   // 3. Create Products (Check for existence)
-  const createProductIfNotExists = async (data: any) => {
-    const existing = await prisma.product.findUnique({ where: { slug: data.slug } });
+  const createProductIfNotExists = async (data: any, tenantId: string, initialQuantity = 100) => {
+    const existing = await prisma.product.findUnique({
+      where: { slug: data.slug },
+      include: { variants: true }
+    });
+
     if (existing) {
-        console.log(`  ⏭️  Product "${data.name}" already exists`);
-        return existing;
+      console.log(`  ⏭️  Product "${data.name}" already exists, updating stock levels to ${initialQuantity}...`);
+      // Đảm bảo các variant có stock level
+      for (const variant of existing.variants) {
+        await prisma.stockLevel.upsert({
+          where: { variantId: variant.id },
+          update: { quantity: initialQuantity },
+          create: {
+            tenantId,
+            variantId: variant.id,
+            quantity: initialQuantity,
+            minQuantity: 10,
+          }
+        });
+      }
+      return existing;
     }
+
     const product = await prisma.product.create({
       data: {
         name: data.name,
@@ -96,11 +114,32 @@ async function main() {
         productModifiers: {
           create: data.modifierGroupIds.map((id: string) => ({ modifierGroupId: id }))
         }
-      }
+      },
+      include: { variants: true }
     });
-    console.log(`  ✅ Product "${data.name}" created`);
+
+    // Khởi tạo tồn kho cho variants mới tạo
+    for (const variant of product.variants) {
+      await prisma.stockLevel.create({
+        data: {
+          tenantId,
+          variantId: variant.id,
+          quantity: initialQuantity,
+          minQuantity: 10,
+        }
+      });
+    }
+
+    console.log(`  ✅ Product "${data.name}" created with stock level ${initialQuantity}`);
     return product;
   };
+
+  // 4. Get Demo Tenant
+  const demoTenant = await prisma.tenant.findUnique({ where: { slug: 'demo' } });
+  if (!demoTenant) {
+    console.error('❌ Demo tenant not found. Please run seed.ts first.');
+    return;
+  }
 
   // Product 1: Cà phê sữa đá
   await createProductIfNotExists({
@@ -115,7 +154,7 @@ async function main() {
       { name: 'Size L', price: 35000, sku: 'CF-SD-L' },
     ],
     modifierGroupIds: [groupIce.id]
-  });
+  }, demoTenant.id);
 
   // Product 2: Trà đào cam sả
   await createProductIfNotExists({
@@ -130,7 +169,20 @@ async function main() {
       { name: 'Size L', price: 55000, sku: 'TEA-DCS-L' },
     ],
     modifierGroupIds: [groupSugar.id, groupIce.id, groupTopping.id]
-  });
+  }, demoTenant.id);
+  // Product 3: Bạc xỉu (Dùng để test Hết hàng)
+  await createProductIfNotExists({
+    name: 'Bạc xỉu (Hết hàng)',
+    slug: 'bac-xiu',
+    sku: 'CF-BX',
+    categoryId: catCafe.id,
+    baseUnit: 'Ly',
+    imageUrl: 'https://img.freepik.com/free-photo/traditional-vietnamese-coffee-with-condensed-milk_144627-40012.jpg',
+    variants: [
+      { name: 'Mặc định', price: 32000, sku: 'CF-BX-DEF' },
+    ],
+    modifierGroupIds: [groupIce.id]
+  }, demoTenant.id, 0); // Truyền thêm param quantity = 0
 
   console.log('🏁 Seeding completed!');
 }
