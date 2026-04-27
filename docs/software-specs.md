@@ -1,6 +1,6 @@
 # 📋 Software Specification — Retail SaaS
 
-> **Version:** 1.2.2 | **Cập nhật:** 2026-04-27 | **Phase hiện tại:** Phase 1 🚧
+> **Version:** 1.3.0 | **Cập nhật:** 2026-04-27 | **Phase hiện tại:** Phase 2 🚧
 
 Tài liệu tổng hợp đặc tả kỹ thuật của hệ thống **Retail SaaS** — nền tảng quản lý bán lẻ đa tenant (multi-tenant), hỗ trợ nhiều loại hình kinh doanh (cà phê, quán ăn, tạp hóa, ...).
 
@@ -1128,16 +1128,16 @@ Bảng `store_config` lưu JSON cấu hình, quyết định tính năng nào b�
 
 ---
 
-### Phase 1 — MVP Bán hàng 🚧 (8 tuần · Sprint 3–6)
+### Phase 1 — MVP Bán hàng ✅ (8 tuần · Sprint 3–6)
 
 | Sprint | Tính năng | Trạng thái |
 |---|---|---|
 | Sprint 3 | Catalog: CRUD categories, products, variants, unit conversion | ✅ Hoàn thành |
 | Sprint 4 | POS Core: Tạo đơn, modifier, Menu Grid, Quản lý bàn, Phân loại đơn, Auth Guard | ✅ Hoàn thành |
 | Sprint 5 | Thanh toán (QR Stripe, Tiền mặt), In hóa đơn, Quản lý ca (mở/chốt, đối soát). | ✅ Hoàn thành |
-| Sprint 6 | Kho cơ bản: stock movement, cảnh báo hết hàng | 🔲 |
+| Sprint 6 | Kho cơ bản: stock movement, cảnh báo hết hàng, trừ kho tự động khi thanh toán. | ✅ Hoàn thành |
 
-**Exit criteria**: Bán hàng end-to-end — tạo đơn → thanh toán → trừ kho → in bill → đóng ca.
+**Exit criteria đã đạt**: Bán hàng end-to-end — tạo đơn → thanh toán → trừ kho → in bill → đóng ca.
 
 ---
 
