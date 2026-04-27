@@ -19,9 +19,17 @@ export interface CartItem {
   modifiers: CartModifier[];
 }
 
+export type OrderType = 'DINE_IN' | 'TAKE_AWAY' | 'DELIVERY';
+
 interface CartState {
   items: CartItem[];
   discount: number;
+  orderType: OrderType;
+  tableId?: string;
+  tableName?: string;
+  areaName?: string;
+  customerName?: string;
+  deliveryPartner?: string;
   
   // Actions
   addItem: (item: Omit<CartItem, 'id'>) => void;
@@ -29,6 +37,8 @@ interface CartState {
   updateQuantity: (id: string, quantity: number) => void;
   updateNote: (id: string, note: string) => void;
   setDiscount: (amount: number) => void;
+  setOrderType: (type: OrderType, tableId?: string, tableName?: string, areaName?: string) => void;
+  setCustomerInfo: (name?: string, deliveryPartner?: string) => void;
   clearCart: () => void;
   
   // Getters
@@ -42,11 +52,9 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   discount: 0,
+  orderType: 'TAKE_AWAY',
 
   addItem: (item) => set((state) => {
-    // If exact same variant and modifiers exist, we could merge. 
-    // For simplicity in POS, we often just append a new line or merge if identical.
-    // Let's implement simple append for now with unique ID
     return {
       items: [...state.items, { ...item, id: generateId() }]
     };
@@ -66,7 +74,28 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   setDiscount: (amount) => set({ discount: Math.max(0, amount) }),
 
-  clearCart: () => set({ items: [], discount: 0 }),
+  setOrderType: (type, tableId, tableName, areaName) => set({ 
+    orderType: type, 
+    tableId, 
+    tableName,
+    areaName,
+    // Reset other info if switching
+    ...(type !== 'DINE_IN' && { tableId: undefined, tableName: undefined, areaName: undefined }),
+  }),
+
+  setCustomerInfo: (name, deliveryPartner) => set({
+    customerName: name,
+    deliveryPartner: deliveryPartner
+  }),
+
+  clearCart: () => set({ 
+    items: [], 
+    discount: 0, 
+    tableId: undefined, 
+    tableName: undefined, 
+    customerName: undefined, 
+    deliveryPartner: undefined 
+  }),
 
   getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
 

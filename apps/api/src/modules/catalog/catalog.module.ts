@@ -9,6 +9,8 @@ import { VariantService } from './services/variant.service';
 import { UnitConversionService } from './services/unit-conversion.service';
 import { ModifierController } from './controllers/modifier.controller';
 import { ModifierService } from './services/modifier.service';
+import { TableController } from './controllers/table.controller';
+import { TableService } from './services/table.service';
 
 @Module({
   controllers: [
@@ -16,15 +18,17 @@ import { ModifierService } from './services/modifier.service';
     ProductController,
     VariantController,
     UnitConversionController,
-    ModifierController
+    ModifierController,
+    TableController
   ],
   providers: [
     CategoryService,
     ProductService,
     VariantService,
     UnitConversionService,
-    ModifierService
+    ModifierService,
+    TableService
   ],
+  exports: [TableService]
 })
 export class CatalogModule {}
-

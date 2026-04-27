@@ -1,6 +1,6 @@
 # 📋 Software Specification — Retail SaaS
 
-> **Version:** 1.2.0 | **Cập nhật:** 2026-04-25 | **Phase hiện tại:** Phase 1 🚧
+> **Version:** 1.2.2 | **Cập nhật:** 2026-04-27 | **Phase hiện tại:** Phase 1 🚧
 
 Tài liệu tổng hợp đặc tả kỹ thuật của hệ thống **Retail SaaS** — nền tảng quản lý bán lẻ đa tenant (multi-tenant), hỗ trợ nhiều loại hình kinh doanh (cà phê, quán ăn, tạp hóa, ...).
 
@@ -731,7 +731,7 @@ docker-compose up --build
 - Thu ngân nhập số tiền khách đưa → hệ thống tính tiền thừa tự động → mở ngăn kéo tiền → xác nhận.
 - Hỗ trợ ghi nợ cho khách quen (với quyền phù hợp).
 
-**Thanh toán QR (VNPay, MoMo, ZaloPay)**
+**Thanh toán QR & Chuyển khoản (Stripe, MoMo, ZaloPay)**
 - Tạo mã QR động → hiển thị cho khách quét → polling kết quả qua webhook → xác nhận / timeout.
 - Xử lý trường hợp webhook đến trễ bằng cơ chế đối soát cuối ngày.
 - Idempotency key bắt buộc cho mỗi payment request.
@@ -740,11 +740,11 @@ docker-compose up --build
 - Hỗ trợ split payment: một đơn có thể thanh toán bằng nhiều phương thức khác nhau.
 - Ví dụ: khách thanh toán 100k tiền mặt + 50k QR.
 
-**Offline mode**
+**Offline mode** (⚠️ Tạm hoãn - Chuyển sang Phase sau)
 - Khi mất kết nối: chuyển sang offline mode, lưu đơn hàng local (IndexedDB / SQLite).
 - Chỉ nhận tiền mặt khi offline.
 - Đồng bộ toàn bộ khi có mạng lại (sync queue với retry logic).
-- **Bắt buộc** cho thị trường Việt Nam — POS phải hoạt động ≥ 2 giờ không mạng.
+- **Bắt buộc** cho thị trường Việt Nam (tương lai) — POS phải hoạt động ≥ 2 giờ không mạng.
 
 **Hoàn trả / Huỷ đơn**
 - Yêu cầu quyền Manager hoặc Supervisor.
@@ -754,12 +754,23 @@ docker-compose up --build
 - Ghi log đầy đủ với timestamp và user thực hiện.
 - Hoàn điểm tích lũy khi huỷ đơn.
 
-#### Đặt bàn & Order theo bàn (Quán ăn)
+#### Phân loại Đơn hàng & Quản lý bàn
 
-- Table management: tạo/sửa/xóa bàn, phân khu vực (Tầng 1, Sân vườn, VIP).
-- Trạng thái bàn: `available` | `occupied` | `reserved` | `cleaning`.
-- Gộp bàn / tách bàn: một đơn có thể liên kết nhiều bàn.
-- Gọi thêm món bất kỳ lúc nào trong khi đơn đang `confirmed`.
+Hệ thống hỗ trợ 3 loại hình đơn hàng chính để phục vụ đa dạng mô hình kinh doanh (Cà phê, Nhà hàng, Take-away):
+
+| Loại đơn | Đặc điểm | Nghiệp vụ đi kèm |
+|---|---|---|
+| **DINE_IN (Ngồi tại chỗ)** | Khách ngồi tại quán | Bắt buộc chọn Bàn. Theo dõi trạng thái bàn (Trống/Đang dùng). Hỗ trợ chuyển/gộp bàn. |
+| **TAKE_AWAY (Mang đi)** | Khách mua mang về | Không cần chọn bàn. Ghi nhận tên khách/số thứ tự để gọi món khi xong. |
+| **DELIVERY (Giao hàng)** | Đơn qua App/Shipper | Ghi nhận đối tác giao hàng (Grab, ShopeeFood, BeFood, ...) hoặc Shipper riêng. |
+
+**Quản lý khu vực & bàn (Table Management):**
+- **Phân khu vực (Area):** Tầng 1, Tầng 2, Sân thượng, Phòng VIP, v.v.
+- **Trạng thái bàn (Table Status):** 
+    - `AVAILABLE` (Trống): Bàn sẵn sàng đón khách.
+    - `OCCUPIED` (Đang dùng): Có khách ngồi và có đơn hàng chưa thanh toán.
+    - `RESERVED` (Đặt trước): Bàn đã có khách đặt lịch.
+- **Liên kết đơn hàng:** Một bàn chỉ có 1 đơn hàng active tại một thời điểm. Hỗ trợ in báo bếp theo số bàn.
 
 #### Mở ca & Đóng ca
 
@@ -1062,7 +1073,7 @@ Bảng `store_config` lưu JSON cấu hình, quyết định tính năng nào b�
 | Phân quyền theo vai trò | Nhân sự |
 | Báo cáo doanh thu cơ bản | Báo cáo |
 | Onboarding & cấu hình tenant | Platform |
-| Offline mode (≥ 2h) | Kỹ thuật |
+| Offline mode (≥ 2h) | Kỹ thuật | ⚪ Tạm hoãn |
 
 #### 🟡 Quan trọng — Cần có trong Phase 1–2
 
@@ -1108,7 +1119,7 @@ Bảng `store_config` lưu JSON cấu hình, quyết định tính năng nào b�
 **Exit criteria đã đạt**: Tạo tenant, đăng nhập, middleware route đúng schema — không data leak.
 
 **Exit checklist trước khi ra mắt (từng phase):**
-- Offline mode hoạt động — test với 30 phút không có mạng
+- [ ] ~~Offline mode hoạt động — test với 30 phút không có mạng~~ (Tạm hoãn)
 - Đối soát tiền mặt cuối ca — test với nhiều kịch bản chênh lệch
 - Multi-tenant isolation — test không thể cross-tenant access
 - Thanh toán QR — test cả webhook thành công, thất bại và đến trễ
@@ -1122,11 +1133,11 @@ Bảng `store_config` lưu JSON cấu hình, quyết định tính năng nào b�
 | Sprint | Tính năng | Trạng thái |
 |---|---|---|
 | Sprint 3 | Catalog: CRUD categories, products, variants, unit conversion | ✅ Hoàn thành |
-| Sprint 4 | POS Core: Tạo order, modifier, huỷ đơn, menu grid | ✅ Hoàn thành |
-| Sprint 5 | Thanh toán: tiền mặt/chuyển khoản, split payment, ca làm việc, offline | 🔲 |
-| Sprint 6 | Kho cơ bản: stock movement, cảnh báo hết hàng, in bill thermal | 🔲 |
+| Sprint 4 | POS Core: Tạo đơn, modifier, Menu Grid, Quản lý bàn, Phân loại đơn, Auth Guard | ✅ Hoàn thành |
+| Sprint 5 | Thanh toán (QR Stripe, Tiền mặt), In hóa đơn, Quản lý ca (mở/chốt, đối soát). | ✅ Hoàn thành |
+| Sprint 6 | Kho cơ bản: stock movement, cảnh báo hết hàng | 🔲 |
 
-**Exit criteria**: Bán hàng end-to-end — tạo đơn → thanh toán → trừ kho → in bill → đóng ca. Offline ≥ 2h.
+**Exit criteria**: Bán hàng end-to-end — tạo đơn → thanh toán → trừ kho → in bill → đóng ca.
 
 ---
 
@@ -1149,7 +1160,7 @@ Bảng `store_config` lưu JSON cấu hình, quyết định tính năng nào b�
 |---|---|---|
 | Sprint 11 | Dashboard: doanh thu, lãi gộp, top sản phẩm, export Excel/PDF | 🔲 |
 | Sprint 12 | Nhân sự: CRUD users/roles, permission matrix, audit log | 🔲 |
-| Sprint 13 | Module quán ăn: table management, KDS realtime WebSocket | 🔲 |
+| Sprint 13 | Module quán ăn: KDS realtime WebSocket, Chuyển/Gộp bàn nâng cao | 🔲 |
 | Sprint 14 | Module tạp hóa: barcode, lô hàng/hạn dùng, onboarding wizard | 🔲 |
 
 **Exit criteria**: 3 loại hình (cà phê, quán ăn, tạp hóa) tự onboard, cấu hình, vận hành không cần support.

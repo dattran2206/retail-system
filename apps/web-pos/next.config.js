@@ -25,7 +25,7 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@retail-saas/types', '@retail-saas/utils'],
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
     NEXT_PUBLIC_APP_NAME: 'Retail SaaS POS',
   },
 };

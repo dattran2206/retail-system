@@ -46,10 +46,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   /**
    * Set PostgreSQL search_path cho multi-tenant
-   * Được gọi bởi TenantMiddleware trước mỗi request
+   * (Đã vô hiệu hóa việc chuyển schema để dùng trực tiếp db chính)
    */
   async setTenantSchema(schemaName: string): Promise<void> {
-    await this.$executeRawUnsafe(`SET search_path = "${schemaName}", public`);
+    await this.$executeRawUnsafe('SET search_path = public');
   }
 
   /**

@@ -1,7 +1,7 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEnum, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentMethod, OrderStatus } from '@prisma/client';
+import { PaymentMethod, OrderStatus, OrderType } from '@prisma/client';
 
 export class OrderItemModifierDto {
   @ApiProperty({ example: 'uuid-modifier' })
@@ -40,6 +40,31 @@ export class CreateOrderItemDto {
 }
 
 export class CreateOrderDto {
+  @ApiProperty({ enum: OrderType, example: OrderType.DINE_IN })
+  @IsEnum(OrderType)
+  @IsNotEmpty()
+  orderType: OrderType;
+
+  @ApiPropertyOptional({ example: 'uuid-table' })
+  @IsString()
+  @IsOptional()
+  tableId?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-shift' })
+  @IsString()
+  @IsOptional()
+  shiftId?: string;
+
+  @ApiPropertyOptional({ example: 'GrabFood' })
+  @IsString()
+  @IsOptional()
+  deliveryPartner?: string;
+
+  @ApiPropertyOptional({ example: 'Anh Tuấn' })
+  @IsString()
+  @IsOptional()
+  customerName?: string;
+
   @ApiPropertyOptional({ example: 10000 })
   @IsNumber()
   @IsOptional()

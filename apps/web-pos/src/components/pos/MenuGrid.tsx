@@ -2,28 +2,40 @@ import React, { useEffect, useState } from 'react';
 import ProductCard from './ProductCard';
 import ProductModifierModal from './ProductModifierModal';
 import { catalogService } from '@/services/catalog.service';
+import clsx from 'clsx';
 
 export default function MenuGrid() {
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
   useEffect(() => {
-    // Gọi API lấy danh sách sản phẩm qua CatalogService
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const res = await catalogService.getProducts();
-        // Backend trả về dạng { data: [], meta: {} } bọc trong { data: {} } của interceptor
-        // Sau khi qua apiClient interceptor, res sẽ là { data: [], meta: {} }
-        setProducts((res as any).data || res);
+        setLoading(true);
+        // Gọi song song cả Products và Categories
+        const [prodRes, catRes] = await Promise.all([
+          catalogService.getProducts(),
+          catalogService.getCategories()
+        ]);
+        
+        setProducts((prodRes as any).data || prodRes);
+        setCategories((catRes as any).data || catRes);
       } catch (err) {
-        console.error('Failed to fetch products', err);
+        console.error('Failed to fetch menu data', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
+
+  // Lọc sản phẩm theo Category đã chọn
+  const filteredProducts = selectedCategoryId
+    ? products.filter(p => p.categoryId === selectedCategoryId)
+    : products;
 
   if (loading) {
     return (
@@ -38,19 +50,41 @@ export default function MenuGrid() {
     <div className="w-full">
       {/* Category filter tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none">
-        <button className="px-6 py-2 rounded-full bg-md-sys-color-primary text-md-sys-color-on-primary font-medium shadow-md3-1">Tất cả</button>
-        <button className="px-6 py-2 rounded-full bg-md-sys-color-surface-variant text-md-sys-color-on-surface-variant font-medium hover:bg-md-sys-color-surface-variant/80 transition-colors">Cà phê</button>
-        <button className="px-6 py-2 rounded-full bg-md-sys-color-surface-variant text-md-sys-color-on-surface-variant font-medium hover:bg-md-sys-color-surface-variant/80 transition-colors">Trà sữa</button>
+        <button 
+          onClick={() => setSelectedCategoryId(null)}
+          className={clsx(
+            "px-6 py-2 rounded-full font-medium transition-all",
+            !selectedCategoryId 
+              ? "bg-md-sys-color-primary text-md-sys-color-on-primary shadow-md3-1" 
+              : "bg-md-sys-color-surface-variant text-md-sys-color-on-surface-variant hover:bg-md-sys-color-surface-variant/80"
+          )}
+        >
+          Tất cả
+        </button>
+
+        {categories.map((cat) => (
+          <button 
+            key={cat.id}
+            onClick={() => setSelectedCategoryId(cat.id)}
+            className={clsx(
+              "px-6 py-2 rounded-full font-medium transition-all whitespace-nowrap",
+              selectedCategoryId === cat.id
+                ? "bg-md-sys-color-primary text-md-sys-color-on-primary shadow-md3-1" 
+                : "bg-md-sys-color-surface-variant text-md-sys-color-on-surface-variant hover:bg-md-sys-color-surface-variant/80"
+            )}
+          >
+            {cat.name}
+          </button>
+        ))}
       </div>
 
-      {products.length === 0 ? (
-        <div className="p-20 text-center text-md-sys-color-on-surface-variant bg-md-sys-color-surface-variant/20 rounded-md3-large border border-dashed border-md-sys-color-outline-variant">
-          Chưa có sản phẩm nào trong thực đơn.
+      {filteredProducts.length === 0 ? (
+        <div className="p-20 text-center text-md-sys-color-on-surface-variant bg-md-sys-color-surface-variant/20 rounded-md3-large border border-dashed border-md-sys-color-outline-variant animate-in fade-in zoom-in duration-300">
+          Chưa có sản phẩm nào trong danh mục này.
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((p) => {
-            // Lấy giá của variant mặc định
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {filteredProducts.map((p) => {
             const defaultVariant = p.variants?.[0];
             const displayPrice = defaultVariant ? Number(defaultVariant.price) : 0;
 
